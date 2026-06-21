@@ -5,7 +5,8 @@ import {
   CreditCard, 
   UserCheck, 
   Plus, 
-  TrendingUp
+  TrendingUp,
+  Search
 } from "lucide-react";
 
 export const SubscriptionManager: React.FC = () => {
@@ -18,6 +19,9 @@ export const SubscriptionManager: React.FC = () => {
   const [subType, setSubType] = useState<1 | 2 | 3>(1);
   const [subStatus, setSubStatus] = useState<'active' | 'expired'>("active");
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
+
+  // Estado de búsqueda
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     loadClients();
@@ -206,10 +210,30 @@ export const SubscriptionManager: React.FC = () => {
             padding: "1.75rem",
             boxShadow: "var(--shadow-sm)"
           }}>
-            <h3 style={{ marginBottom: "1.25rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <CreditCard size={20} style={{ color: "var(--color-primary)" }} />
               Estado de Suscripción por Cliente
             </h3>
+
+            <div style={{ position: "relative", margin: "1rem 0", maxWidth: "400px" }}>
+              <Search size={16} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+              <input
+                type="text"
+                placeholder="Buscar por nombre o empresa..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  paddingLeft: "2.25rem",
+                  fontSize: "0.9rem",
+                  height: "38px",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--color-border)",
+                  backgroundColor: "var(--bg-card)",
+                  color: "var(--text-primary)",
+                  width: "100%"
+                }}
+              />
+            </div>
 
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.95rem" }}>
@@ -225,67 +249,83 @@ export const SubscriptionManager: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {clients.map(client => {
-                    const sub = client.subscription;
-                    return (
-                      <tr key={client.id} style={{ borderBottom: "1px solid var(--color-border)" }}>
-                        <td style={{ padding: "1rem 0.75rem", fontWeight: 600 }}>{client.company}</td>
-                        <td style={{ padding: "1rem 0.75rem", color: "var(--text-secondary)" }}>{client.name}</td>
-                        <td style={{ padding: "1rem 0.75rem" }}>
-                          {sub ? (
-                            <span className="badge badge-indigo" style={{ fontWeight: 600 }}>
-                              Tipo {sub.type}
-                            </span>
-                          ) : (
-                            <span style={{ color: "var(--text-muted)", fontStyle: "italic" }}>Sin suscripción</span>
-                          )}
-                        </td>
-                        <td style={{ padding: "1rem 0.75rem", fontWeight: 600 }}>
-                          {sub ? `$${sub.price.toLocaleString()} MXN` : "-"}
-                        </td>
-                        <td style={{ padding: "1rem 0.75rem", color: "var(--text-secondary)" }}>
-                          {sub ? sub.startDate : "-"}
-                        </td>
-                        <td style={{ padding: "1rem 0.75rem" }}>
-                          {sub ? (
-                            <span className={`badge ${sub.status === 'active' ? 'badge-success' : 'badge-danger'}`}>
-                              {sub.status === 'active' ? 'Activo' : 'Vencido'}
-                            </span>
-                          ) : (
-                            <span className="badge" style={{ backgroundColor: "var(--color-border)", color: "var(--text-muted)" }}>Inactivo</span>
-                          )}
-                        </td>
-                        <td style={{ padding: "1rem 0.75rem", textAlign: "right" }}>
-                          <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-                            <button
-                              className="btn btn-outline"
-                              style={{ padding: "0.3rem 0.6rem", fontSize: "0.8rem" }}
-                              onClick={() => {
-                                setSelectedClientId(client.id);
-                                if (sub) {
-                                  setSubType(sub.type);
-                                  setSubStatus(sub.status);
-                                  setStartDate(sub.startDate);
-                                }
-                                setShowModal(true);
-                              }}
-                            >
-                              Gestionar
-                            </button>
-                            {sub && (
+                  {clients
+                    .filter(client => 
+                      client.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                      client.company.toLowerCase().includes(searchTerm.toLowerCase())
+                    )
+                    .map(client => {
+                      const sub = client.subscription;
+                      return (
+                        <tr key={client.id} style={{ borderBottom: "1px solid var(--color-border)" }}>
+                          <td style={{ padding: "1rem 0.75rem", fontWeight: 600 }}>{client.company}</td>
+                          <td style={{ padding: "1rem 0.75rem", color: "var(--text-secondary)" }}>{client.name}</td>
+                          <td style={{ padding: "1rem 0.75rem" }}>
+                            {sub ? (
+                              <span className="badge badge-indigo" style={{ fontWeight: 600 }}>
+                                Tipo {sub.type}
+                              </span>
+                            ) : (
+                              <span style={{ color: "var(--text-muted)", fontStyle: "italic" }}>Sin suscripción</span>
+                            )}
+                          </td>
+                          <td style={{ padding: "1rem 0.75rem", fontWeight: 600 }}>
+                            {sub ? `$${sub.price.toLocaleString()} MXN` : "-"}
+                          </td>
+                          <td style={{ padding: "1rem 0.75rem", color: "var(--text-secondary)" }}>
+                            {sub ? sub.startDate : "-"}
+                          </td>
+                          <td style={{ padding: "1rem 0.75rem" }}>
+                            {sub ? (
+                              <span className={`badge ${sub.status === 'active' ? 'badge-success' : 'badge-danger'}`}>
+                                {sub.status === 'active' ? 'Activo' : 'Vencido'}
+                              </span>
+                            ) : (
+                              <span className="badge" style={{ backgroundColor: "var(--color-border)", color: "var(--text-muted)" }}>Inactivo</span>
+                            )}
+                          </td>
+                          <td style={{ padding: "1rem 0.75rem", textAlign: "right" }}>
+                            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
                               <button
                                 className="btn btn-outline"
-                                style={{ padding: "0.3rem 0.6rem", fontSize: "0.8rem", color: "var(--color-danger)", borderColor: "rgba(239, 68, 68, 0.2)" }}
-                                onClick={() => handleCancelSubscription(client.id)}
+                                style={{ padding: "0.3rem 0.6rem", fontSize: "0.8rem" }}
+                                onClick={() => {
+                                  setSelectedClientId(client.id);
+                                  if (sub) {
+                                    setSubType(sub.type);
+                                    setSubStatus(sub.status);
+                                    setStartDate(sub.startDate);
+                                  }
+                                  setShowModal(true);
+                                }}
                               >
-                                Cancelar
+                                Gestionar
                               </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                              {sub && (
+                                <button
+                                  className="btn btn-outline"
+                                  style={{ padding: "0.3rem 0.6rem", fontSize: "0.8rem", color: "var(--color-danger)", borderColor: "rgba(239, 68, 68, 0.2)" }}
+                                  onClick={() => handleCancelSubscription(client.id)}
+                                >
+                                  Cancelar
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                  {clients.filter(client => 
+                    client.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                    client.company.toLowerCase().includes(searchTerm.toLowerCase())
+                  ).length === 0 && (
+                    <tr>
+                      <td colSpan={7} style={{ padding: "2rem", fontStyle: "italic", color: "var(--text-muted)", textAlign: "center" }}>
+                        {clients.length === 0 ? "Aún no hay clientes registrados." : "No se encontraron coincidencias."}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

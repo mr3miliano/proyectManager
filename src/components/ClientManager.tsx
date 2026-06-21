@@ -9,7 +9,8 @@ import {
   Building,
   Edit2,
   Trash2,
-  CreditCard
+  CreditCard,
+  Search
 } from "lucide-react";
 
 export const ClientManager: React.FC = () => {
@@ -32,6 +33,9 @@ export const ClientManager: React.FC = () => {
   const [editCompany, setEditCompany] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
+
+  // Estado de búsqueda
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     loadClients();
@@ -186,31 +190,61 @@ export const ClientManager: React.FC = () => {
               <Users size={18} style={{ color: "var(--color-primary)" }} />
               Directorio de Clientes
             </h3>
-            {clients.map(client => (
-              <button
-                key={client.id}
-                onClick={() => setSelectedClient(client)}
-                className="btn"
+            
+            <div style={{ position: "relative", marginBottom: "0.5rem", padding: "0 0.5rem" }}>
+              <Search size={16} style={{ position: "absolute", left: "18px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+              <input
+                type="text"
+                placeholder="Buscar cliente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
-                  justifyContent: "flex-start",
-                  width: "100%",
-                  padding: "0.75rem",
-                  backgroundColor: selectedClient?.id === client.id ? "var(--color-primary-light)" : "transparent",
-                  border: "1px solid transparent",
+                  paddingLeft: "2.25rem",
+                  fontSize: "0.85rem",
+                  height: "36px",
                   borderRadius: "var(--radius-md)",
-                  color: selectedClient?.id === client.id ? "var(--color-primary)" : "var(--text-primary)",
-                  fontWeight: selectedClient?.id === client.id ? 600 : 400
+                  border: "1px solid var(--color-border)",
+                  backgroundColor: "var(--bg-card)",
+                  color: "var(--text-primary)",
+                  width: "100%"
                 }}
-              >
-                <div style={{ textAlign: "left" }}>
-                  <div style={{ fontSize: "0.9rem" }}>{client.company}</div>
-                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 400 }}>{client.name}</span>
-                </div>
-              </button>
-            ))}
-            {clients.length === 0 && (
+              />
+            </div>
+
+            {clients
+              .filter(client => 
+                client.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                client.company.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+              .map(client => (
+                <button
+                  key={client.id}
+                  onClick={() => setSelectedClient(client)}
+                  className="btn"
+                  style={{
+                    justifyContent: "flex-start",
+                    width: "100%",
+                    padding: "0.75rem",
+                    backgroundColor: selectedClient?.id === client.id ? "var(--color-primary-light)" : "transparent",
+                    border: "1px solid transparent",
+                    borderRadius: "var(--radius-md)",
+                    color: selectedClient?.id === client.id ? "var(--color-primary)" : "var(--text-primary)",
+                    fontWeight: selectedClient?.id === client.id ? 600 : 400
+                  }}
+                >
+                  <div style={{ textAlign: "left" }}>
+                    <div style={{ fontSize: "0.9rem" }}>{client.company}</div>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 400 }}>{client.name}</span>
+                  </div>
+                </button>
+              ))}
+
+            {clients.filter(client => 
+              client.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+              client.company.toLowerCase().includes(searchTerm.toLowerCase())
+            ).length === 0 && (
               <p style={{ fontSize: "0.85rem", padding: "1rem", color: "var(--text-muted)", fontStyle: "italic", textAlign: "center" }}>
-                Aún no hay clientes registrados.
+                {clients.length === 0 ? "Aún no hay clientes registrados." : "No se encontraron coincidencias."}
               </p>
             )}
           </div>
