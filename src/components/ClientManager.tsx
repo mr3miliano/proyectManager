@@ -3,16 +3,13 @@ import { dataService } from "../services/dataService";
 import type { Client } from "../services/dataService";
 import { 
   Users, 
-  FileText, 
-  DollarSign, 
   Plus, 
   Mail, 
   Phone, 
   Building,
-  CheckCircle,
-  FileCheck2,
   Edit2,
-  Trash2
+  Trash2,
+  CreditCard
 } from "lucide-react";
 
 export const ClientManager: React.FC = () => {
@@ -22,8 +19,6 @@ export const ClientManager: React.FC = () => {
 
   // Formularios
   const [showClientModal, setShowClientModal] = useState(false);
-  const [showContractModal, setShowContractModal] = useState(false);
-  const [showMilestoneModal, setShowMilestoneModal] = useState(false);
 
   // Campos cliente
   const [cName, setCName] = useState("");
@@ -37,16 +32,6 @@ export const ClientManager: React.FC = () => {
   const [editCompany, setEditCompany] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
-
-  // Campos contrato
-  const [conTitle, setConTitle] = useState("");
-  const [conAmount, setConAmount] = useState(1000);
-  const [conStatus, setConStatus] = useState<'active' | 'completed' | 'draft'>("active");
-
-  // Campos hito
-  const [mileDesc, setMileDesc] = useState("");
-  const [mileAmount, setMileAmount] = useState(500);
-  const [mileDate, setMileDate] = useState("");
 
   useEffect(() => {
     loadClients();
@@ -154,84 +139,7 @@ export const ClientManager: React.FC = () => {
     }
   };
 
-  const handleAddContract = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedClient || !conTitle) return;
 
-    try {
-      const newContract = { title: conTitle, amount: Number(conAmount), status: conStatus };
-      const updatedContracts = [...(selectedClient.contracts || []), newContract];
-      
-      await dataService.updateClient(selectedClient.id, { contracts: updatedContracts });
-      
-      setConTitle("");
-      setConAmount(1000);
-      setConStatus("active");
-      setShowContractModal(false);
-      
-      // Actualizar vista
-      const updatedClient = { ...selectedClient, contracts: updatedContracts };
-      setSelectedClient(updatedClient);
-      
-      // Actualizar lista global
-      setClients(prev => prev.map(c => c.id === selectedClient.id ? updatedClient : c));
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleAddMilestone = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedClient || !mileDesc) return;
-
-    try {
-      const newMilestone = {
-        id: `m-${Date.now()}`,
-        description: mileDesc,
-        amount: Number(mileAmount),
-        dueDate: mileDate || new Date().toISOString().split("T")[0],
-        status: 'pending' as const
-      };
-      
-      const updatedMilestones = [...(selectedClient.billingMilestones || []), newMilestone];
-      await dataService.updateClient(selectedClient.id, { billingMilestones: updatedMilestones });
-
-      setMileDesc("");
-      setMileAmount(500);
-      setMileDate("");
-      setShowMilestoneModal(false);
-
-      // Actualizar vista
-      const updatedClient = { ...selectedClient, billingMilestones: updatedMilestones };
-      setSelectedClient(updatedClient);
-      
-      // Actualizar lista global
-      setClients(prev => prev.map(c => c.id === selectedClient.id ? updatedClient : c));
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleUpdateMilestoneStatus = async (milestoneId: string, newStatus: 'pending' | 'invoiced' | 'paid') => {
-    if (!selectedClient) return;
-
-    try {
-      const updatedMilestones = selectedClient.billingMilestones.map(m => 
-        m.id === milestoneId ? { ...m, status: newStatus } : m
-      );
-
-      await dataService.updateClient(selectedClient.id, { billingMilestones: updatedMilestones });
-      
-      // Actualizar vista
-      const updatedClient = { ...selectedClient, billingMilestones: updatedMilestones };
-      setSelectedClient(updatedClient);
-      
-      // Actualizar lista global
-      setClients(prev => prev.map(c => c.id === selectedClient.id ? updatedClient : c));
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   return (
     <div style={{ padding: "2.5rem", width: "100%", display: "flex", flexDirection: "column", gap: "2rem", overflowY: "auto" }}>
@@ -239,9 +147,9 @@ export const ClientManager: React.FC = () => {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h1>Clientes y Facturación</h1>
+          <h1>Clientes y CRM</h1>
           <p style={{ color: "var(--text-secondary)" }}>
-            Administra contactos comerciales, contratos activos e hitos de cobranza.
+            Administra contactos comerciales y consulta su estado de suscripción.
           </p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowClientModal(true)}>
@@ -357,150 +265,73 @@ export const ClientManager: React.FC = () => {
                 </div>
               </div>
 
-              {/* Grid de Secciones: Contratos & Facturación */}
+              {/* Resumen de Suscripción */}
               <div style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "1.5rem",
-                alignItems: "flex-start"
+                backgroundColor: "var(--bg-card)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius-lg)",
+                padding: "1.5rem",
+                boxShadow: "var(--shadow-sm)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "1rem"
               }}>
-                {/* Contratos */}
-                <div style={{
-                  backgroundColor: "var(--bg-card)",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: "var(--radius-lg)",
-                  padding: "1.5rem",
-                  boxShadow: "var(--shadow-sm)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "1rem"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <h3 style={{ fontSize: "1.1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      <FileText size={18} style={{ color: "var(--color-primary)" }} />
-                      Contratos Comerciales
-                    </h3>
-                    <button className="btn btn-outline" style={{ padding: "0.35rem 0.6rem", fontSize: "0.8rem" }} onClick={() => setShowContractModal(true)}>
-                      <Plus size={14} />
-                      <span>Contrato</span>
-                    </button>
+                <h3 style={{ fontSize: "1.1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <CreditCard size={18} style={{ color: "var(--color-primary)" }} />
+                  Resumen de Suscripción
+                </h3>
+
+                {selectedClient.subscription ? (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                    gap: "1.5rem",
+                    backgroundColor: "var(--bg-sidebar)",
+                    padding: "1.25rem",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--color-border)"
+                  }}>
+                    <div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>Nivel de Suscripción</div>
+                      <strong style={{ fontSize: "1.1rem", color: "var(--color-primary)" }}>
+                        {selectedClient.subscription.type === 1 ? "Plan Básico" : selectedClient.subscription.type === 2 ? "Plan Profesional" : "Plan Premium"} (Nivel {selectedClient.subscription.type})
+                      </strong>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>Tarifa Mensual</div>
+                      <strong style={{ fontSize: "1.1rem", color: "var(--color-success)" }}>
+                        ${selectedClient.subscription.price.toLocaleString()} MXN
+                      </strong>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>Fecha de Inicio</div>
+                      <span style={{ fontSize: "1rem", fontWeight: 500 }}>
+                        {selectedClient.subscription.startDate}
+                      </span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>Estado de Membresía</div>
+                      <span className={`badge ${selectedClient.subscription.status === 'active' ? 'badge-success' : 'badge-danger'}`} style={{ width: "fit-content" }}>
+                        {selectedClient.subscription.status === 'active' ? 'Activo' : 'Expirado'}
+                      </span>
+                    </div>
                   </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: "300px", overflowY: "auto" }}>
-                    {selectedClient.contracts?.map((con, idx) => (
-                      <div key={idx} style={{
-                        border: "1px solid var(--color-border)",
-                        padding: "0.85rem",
-                        borderRadius: "var(--radius-md)",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center"
-                      }}>
-                        <div>
-                          <div style={{ fontSize: "0.9rem", fontWeight: 600 }}>{con.title}</div>
-                          <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", textTransform: "capitalize" }}>
-                            Estado: {con.status}
-                          </span>
-                        </div>
-                        <strong style={{ color: "var(--color-success)", fontSize: "1rem" }}>
-                          ${con.amount.toLocaleString()}
-                        </strong>
-                      </div>
-                    ))}
-                    {(!selectedClient.contracts || selectedClient.contracts.length === 0) && (
-                      <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontStyle: "italic", textAlign: "center", padding: "1rem" }}>
-                        Sin contratos registrados.
-                      </p>
-                    )}
+                ) : (
+                  <div style={{
+                    textAlign: "center",
+                    padding: "2rem",
+                    backgroundColor: "var(--bg-sidebar)",
+                    border: "1px dashed var(--color-border)",
+                    borderRadius: "var(--radius-md)"
+                  }}>
+                    <p style={{ color: "var(--text-muted)", fontStyle: "italic", fontSize: "0.9rem" }}>
+                      Este cliente no cuenta con una suscripción o venta recurrente activa.
+                    </p>
+                    <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginTop: "0.5rem" }}>
+                      Puedes registrar una suscripción desde el módulo de <strong>Ventas y Suscripciones</strong>.
+                    </p>
                   </div>
-                </div>
-
-                {/* Hitos de Facturación */}
-                <div style={{
-                  backgroundColor: "var(--bg-card)",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: "var(--radius-lg)",
-                  padding: "1.5rem",
-                  boxShadow: "var(--shadow-sm)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "1rem"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <h3 style={{ fontSize: "1.1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      <DollarSign size={18} style={{ color: "var(--color-primary)" }} />
-                      Hitos de Cobro
-                    </h3>
-                    <button className="btn btn-outline" style={{ padding: "0.35rem 0.6rem", fontSize: "0.8rem" }} onClick={() => setShowMilestoneModal(true)}>
-                      <Plus size={14} />
-                      <span>Hito</span>
-                    </button>
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: "300px", overflowY: "auto" }}>
-                    {selectedClient.billingMilestones?.map((mile) => (
-                      <div key={mile.id} style={{
-                        border: "1px solid var(--color-border)",
-                        padding: "0.85rem",
-                        borderRadius: "var(--radius-md)",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "0.5rem"
-                      }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                          <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>{mile.description}</span>
-                          <span className={`badge ${
-                            mile.status === 'paid' 
-                              ? 'badge-success' 
-                              : mile.status === 'invoiced' 
-                                ? 'badge-warning' 
-                                : 'badge-indigo'
-                          }`} style={{ fontSize: "0.6rem" }}>
-                            {mile.status === 'paid' ? 'Pagado' : mile.status === 'invoiced' ? 'Facturado' : 'Pendiente'}
-                          </span>
-                        </div>
-
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Vence: {mile.dueDate}</span>
-                          <strong style={{ fontSize: "0.95rem" }}>${mile.amount.toLocaleString()}</strong>
-                        </div>
-
-                        {/* Controles de Estado de Pago */}
-                        <div style={{
-                          display: "flex",
-                          gap: "0.4rem",
-                          borderTop: "1px solid var(--color-border)",
-                          paddingTop: "0.4rem",
-                          marginTop: "0.25rem"
-                        }}>
-                          <button 
-                            className="btn btn-outline" 
-                            style={{ padding: "0.25rem 0.5rem", fontSize: "0.7rem", flexGrow: 1 }}
-                            onClick={() => handleUpdateMilestoneStatus(mile.id, 'invoiced')}
-                            disabled={mile.status === 'invoiced' || mile.status === 'paid'}
-                          >
-                            <FileCheck2 size={12} />
-                            Facturar
-                          </button>
-                          <button 
-                            className="btn btn-outline" 
-                            style={{ padding: "0.25rem 0.5rem", fontSize: "0.7rem", flexGrow: 1, color: "var(--color-success)", borderColor: "rgba(16, 185, 129, 0.2)" }}
-                            onClick={() => handleUpdateMilestoneStatus(mile.id, 'paid')}
-                            disabled={mile.status === 'paid'}
-                          >
-                            <CheckCircle size={12} />
-                            Marcar Pagado
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {(!selectedClient.billingMilestones || selectedClient.billingMilestones.length === 0) && (
-                      <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontStyle: "italic", textAlign: "center", padding: "1rem" }}>
-                        Sin hitos de cobranza cargados.
-                      </p>
-                    )}
-                  </div>
-                </div>
+                )}
               </div>
 
             </div>
@@ -570,98 +401,7 @@ export const ClientManager: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Añadir Contrato */}
-      {showContractModal && selectedClient && (
-        <div className="modal-backdrop">
-          <div className="modal-content">
-            <h3 style={{ marginBottom: "1.5rem" }}>Añadir Contrato a {selectedClient.company}</h3>
-            <form onSubmit={handleAddContract} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, marginBottom: "0.5rem" }}>Título del Contrato</label>
-                <input 
-                  type="text" 
-                  placeholder="Ej. Integración Cloud y QA" 
-                  value={conTitle}
-                  onChange={(e) => setConTitle(e.target.value)}
-                  required 
-                />
-              </div>
 
-              <div className="modal-grid-equal">
-                <div>
-                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, marginBottom: "0.5rem" }}>Monto de Contrato ($)</label>
-                  <input 
-                    type="number" 
-                    value={conAmount}
-                    onChange={(e) => setConAmount(Number(e.target.value))}
-                    required 
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, marginBottom: "0.5rem" }}>Estado</label>
-                  <select value={conStatus} onChange={(e) => setConStatus(e.target.value as any)}>
-                    <option value="active">Activo</option>
-                    <option value="draft">Borrador (Draft)</option>
-                    <option value="completed">Completado</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", marginTop: "1rem" }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowContractModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">Añadir Contrato</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Añadir Hito de Cobro */}
-      {showMilestoneModal && selectedClient && (
-        <div className="modal-backdrop">
-          <div className="modal-content">
-            <h3 style={{ marginBottom: "1.5rem" }}>Añadir Hito de Facturación</h3>
-            <form onSubmit={handleAddMilestone} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, marginBottom: "0.5rem" }}>Descripción del Hito</label>
-                <input 
-                  type="text" 
-                  placeholder="Ej. Diseño UI aprobado por cliente" 
-                  value={mileDesc}
-                  onChange={(e) => setMileDesc(e.target.value)}
-                  required 
-                />
-              </div>
-
-              <div className="modal-grid-equal">
-                <div>
-                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, marginBottom: "0.5rem" }}>Monto del Hito ($)</label>
-                  <input 
-                    type="number" 
-                    value={mileAmount}
-                    onChange={(e) => setMileAmount(Number(e.target.value))}
-                    required 
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, marginBottom: "0.5rem" }}>Fecha Límite</label>
-                  <input 
-                    type="date" 
-                    value={mileDate}
-                    onChange={(e) => setMileDate(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", marginTop: "1rem" }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowMilestoneModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">Añadir Hito</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Modal Editar Cliente */}
       {showEditModal && selectedClient && (
