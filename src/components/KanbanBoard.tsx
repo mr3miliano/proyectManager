@@ -342,10 +342,7 @@ export const KanbanBoard: React.FC = () => {
           alignItems: "center"
         }}>
           <div>
-            <strong>Proyecto: </strong> {selectedProject.description}
-          </div>
-          <div>
-            <strong>Tarifa: </strong> ${selectedProject.hourlyRate}/hr
+            <strong>Proyecto: </strong> {selectedProject.name}
           </div>
         </div>
       )}

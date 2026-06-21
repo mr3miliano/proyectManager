@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { dataService } from "../services/dataService";
 import type { Project, Client, Task, Ticket } from "../services/dataService";
 import { 
-  DollarSign, 
   Clock, 
   AlertCircle, 
   TrendingUp,
@@ -54,7 +53,6 @@ export const Dashboard: React.FC = () => {
   const activeProject = projects[0];
 
   // Cálculos de Negocio
-  const totalBudget = activeProject ? activeProject.budget : 0;
   const hourlyRate = activeProject ? activeProject.hourlyRate : 40;
   const projectClient = activeProject ? clients.find(c => c.id === activeProject.clientId) : null;
   
@@ -67,8 +65,6 @@ export const Dashboard: React.FC = () => {
     totalCost += (t.loggedHours || 0) * hourlyRate;
   });
 
-  const margin = totalBudget - totalCost;
-  const marginPercent = totalBudget > 0 ? (margin / totalBudget) * 100 : 100;
   const openTicketsCount = tickets.filter(tk => tk.status === 'open' || tk.status === 'in_progress').length;
 
   return (
@@ -78,7 +74,7 @@ export const Dashboard: React.FC = () => {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h1>Panel de Control</h1>
-          <p style={{ color: "var(--text-secondary)" }}>Monitorea el progreso de desarrollo y la rentabilidad del proyecto.</p>
+          <p style={{ color: "var(--text-secondary)" }}>Monitorea el progreso de desarrollo y estado de soporte del proyecto.</p>
         </div>
       </div>
 
@@ -88,32 +84,6 @@ export const Dashboard: React.FC = () => {
         gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
         gap: "1.5rem"
       }}>
-        {/* Presupuesto Comercial */}
-        <div style={{
-          backgroundColor: "var(--bg-card)",
-          border: "1px solid var(--color-border)",
-          borderRadius: "var(--radius-lg)",
-          padding: "1.5rem",
-          boxShadow: "var(--shadow-sm)",
-          display: "flex",
-          alignItems: "center",
-          gap: "1rem"
-        }}>
-          <div style={{
-            padding: "0.75rem",
-            backgroundColor: "rgba(16, 185, 129, 0.1)",
-            borderRadius: "var(--radius-md)",
-            color: "var(--color-success)"
-          }}>
-            <DollarSign size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: 500 }}>Presupuesto del Proyecto</span>
-            <h3 style={{ fontSize: "1.5rem", fontWeight: 700, margin: "0.1rem 0" }}>${totalBudget.toLocaleString()}</h3>
-            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Tarifa acordada: ${hourlyRate}/hr</span>
-          </div>
-        </div>
-
         {/* Costos Registrados */}
         <div style={{
           backgroundColor: "var(--bg-card)",
@@ -137,41 +107,6 @@ export const Dashboard: React.FC = () => {
             <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: 500 }}>Costo de Desarrollo</span>
             <h3 style={{ fontSize: "1.5rem", fontWeight: 700, margin: "0.1rem 0" }}>${totalCost.toLocaleString()}</h3>
             <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{totalHours} hrs registradas</span>
-          </div>
-        </div>
-
-        {/* Margen de Ganancia */}
-        <div style={{
-          backgroundColor: "var(--bg-card)",
-          border: "1px solid var(--color-border)",
-          borderRadius: "var(--radius-lg)",
-          padding: "1.5rem",
-          boxShadow: "var(--shadow-sm)",
-          display: "flex",
-          alignItems: "center",
-          gap: "1rem"
-        }}>
-          <div style={{
-            padding: "0.75rem",
-            backgroundColor: margin < 0 ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)",
-            borderRadius: "var(--radius-md)",
-            color: margin < 0 ? "var(--color-danger)" : "var(--color-success)"
-          }}>
-            <DollarSign size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: 500 }}>Margen de Utilidad</span>
-            <h3 style={{ 
-              fontSize: "1.5rem", 
-              fontWeight: 700, 
-              margin: "0.1rem 0",
-              color: margin < 0 ? "var(--color-danger)" : "var(--color-success)"
-            }}>
-              ${margin.toLocaleString()}
-            </h3>
-            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-              {marginPercent.toFixed(0)}% restante
-            </span>
           </div>
         </div>
 

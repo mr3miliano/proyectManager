@@ -43,6 +43,7 @@ export interface Task {
   loggedHours: number;
   dueDate: string;
   createdAt: any;
+  ticketId?: string;
 }
 
 export interface Ticket {
@@ -308,6 +309,16 @@ export const dataService = {
     }
   },
 
+  async deleteTicket(id: string): Promise<void> {
+    if (isFirebaseConfigured && db) {
+      await deleteDoc(doc(db, "tickets", id));
+    } else {
+      const tickets = await this.getTickets();
+      const filtered = tickets.filter(tk => tk.id !== id);
+      localStorage.setItem(TICKETS_KEY, JSON.stringify(filtered));
+    }
+  },
+
   // PROYECTOS
   async getProjects(): Promise<Project[]> {
     let projs: Project[] = [];
@@ -327,7 +338,7 @@ export const dataService = {
 
     if (projs.length === 0) {
       const defaultProj = {
-        name: "Desarrollo E-Commerce SaaS",
+        name: "SaaS monitor financiero",
         description: "Crear una plataforma SaaS multi-tienda para pymes, con pasarela de pagos integrada y panel de administración.",
         clientId: "c1",
         budget: 15000,
@@ -413,14 +424,44 @@ export const dataService = {
   },
 
   async updateTask(id: string, updates: Partial<Task>): Promise<void> {
+    let ticketId: string | undefined;
+    let newStatus = updates.status;
+
     if (isFirebaseConfigured && db) {
-      await updateDoc(doc(db, "tasks", id), updates);
+      const taskRef = doc(db, "tasks", id);
+      const snap = await getDoc(taskRef);
+      if (snap.exists()) {
+        ticketId = snap.data().ticketId;
+      }
+      await updateDoc(taskRef, updates);
+
+      if (ticketId && newStatus) {
+        let ticketStatus: 'open' | 'in_progress' | 'resolved' | 'closed' = 'open';
+        if (newStatus === 'in_progress') ticketStatus = 'in_progress';
+        if (newStatus === 'done') ticketStatus = 'resolved';
+        await updateDoc(doc(db, "tickets", ticketId), { status: ticketStatus });
+      }
     } else {
       const tasks = await this.getTasks();
       const idx = tasks.findIndex(t => t.id === id);
       if (idx !== -1) {
-        tasks[idx] = { ...tasks[idx], ...updates } as Task;
+        const task = tasks[idx];
+        ticketId = task.ticketId;
+        tasks[idx] = { ...task, ...updates } as Task;
         localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
+
+        if (ticketId && newStatus) {
+          let ticketStatus: 'open' | 'in_progress' | 'resolved' | 'closed' = 'open';
+          if (newStatus === 'in_progress') ticketStatus = 'in_progress';
+          if (newStatus === 'done') ticketStatus = 'resolved';
+
+          const tickets = await this.getTickets();
+          const tIdx = tickets.findIndex(tk => tk.id === ticketId);
+          if (tIdx !== -1) {
+            tickets[tIdx].status = ticketStatus;
+            localStorage.setItem(TICKETS_KEY, JSON.stringify(tickets));
+          }
+        }
       }
     }
   },
@@ -461,14 +502,36 @@ export const dataService = {
   },
 
   async updateTicket(id: string, updates: Partial<Ticket>): Promise<void> {
+    let taskStatus: 'todo' | 'in_progress' | 'done' | undefined;
+    if (updates.status) {
+      if (updates.status === 'open') taskStatus = 'todo';
+      if (updates.status === 'in_progress') taskStatus = 'in_progress';
+      if (updates.status === 'resolved' || updates.status === 'closed') taskStatus = 'done';
+    }
+
     if (isFirebaseConfigured && db) {
       await updateDoc(doc(db, "tickets", id), updates);
+
+      if (taskStatus) {
+        const tasksRef = collection(db, "tasks");
+        const q = query(tasksRef, where("ticketId", "==", id));
+        const snap = await getDocs(q);
+        for (const docRef of snap.docs) {
+          await updateDoc(doc(db, "tasks", docRef.id), { status: taskStatus });
+        }
+      }
     } else {
       const tickets = await this.getTickets();
       const idx = tickets.findIndex(tk => tk.id === id);
       if (idx !== -1) {
         tickets[idx] = { ...tickets[idx], ...updates } as Ticket;
         localStorage.setItem(TICKETS_KEY, JSON.stringify(tickets));
+
+        if (taskStatus) {
+          const tasks: Task[] = JSON.parse(localStorage.getItem(TASKS_KEY) || "[]");
+          const updatedTasks = tasks.map(t => t.ticketId === id ? { ...t, status: taskStatus } : t);
+          localStorage.setItem(TASKS_KEY, JSON.stringify(updatedTasks));
+        }
       }
     }
   },

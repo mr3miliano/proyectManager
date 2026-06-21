@@ -123,7 +123,8 @@ export const TicketManager: React.FC = () => {
         priority: ticket.priority,
         assigneeId: ticket.assigneeId || userProfile?.uid || "",
         estimatedHours: ticket.type === 'bug' ? 4 : 8, // Tiempos estimados estándar iniciales
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0] // Vence en 7 días
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // Vence en 7 días
+        ticketId: ticket.id
       });
 
       // 2. Actualizar el estado del ticket a "En Progreso"
@@ -131,6 +132,17 @@ export const TicketManager: React.FC = () => {
       
       alert("¡El ticket ha sido clonado y convertido en una tarea en el Tablero Kanban del proyecto!");
       
+      setSelectedTicket(null);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteTicket = async (ticketId: string) => {
+    if (!window.confirm("¿Estás seguro de que deseas eliminar este ticket de soporte permanentemente?")) return;
+    try {
+      await dataService.deleteTicket(ticketId);
       setSelectedTicket(null);
       fetchData();
     } catch (err) {
@@ -354,9 +366,8 @@ export const TicketManager: React.FC = () => {
                 </div>
 
                 {/* BOTÓN DE CONVERSIÓN CRÍTICO (TECNICO / NEGOCIO) */}
-                <div style={{ 
-                  backgroundColor: "rgba(99, 102, 241, 0.08)",
-                  border: "1px dashed var(--color-primary)",
+                <div style={{
+                  backgroundColor: "var(--color-primary-light)",
                   borderRadius: "var(--radius-md)",
                   padding: "1rem",
                   marginTop: "0.5rem",
@@ -380,6 +391,44 @@ export const TicketManager: React.FC = () => {
                   </button>
                 </div>
 
+                {userProfile?.role === 'admin' && (
+                  <div style={{
+                    backgroundColor: "rgba(239, 68, 68, 0.05)",
+                    border: "1px solid rgba(239, 68, 68, 0.2)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "1rem",
+                    marginTop: "0.5rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5rem"
+                  }}>
+                    <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--color-danger)" }}>
+                      Acción Administrativa (Admin)
+                    </span>
+                    <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                      Elimina este ticket permanentemente del sistema de soporte.
+                    </p>
+                    <button 
+                      className="btn" 
+                      style={{ 
+                        fontSize: "0.85rem", 
+                        gap: "0.5rem",
+                        backgroundColor: "var(--color-danger)",
+                        color: "white",
+                        border: "none",
+                        justifyContent: "center",
+                        display: "flex",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        borderRadius: "var(--radius-md)",
+                        padding: "0.5rem 1rem"
+                      }}
+                      onClick={() => handleDeleteTicket(selectedTicket.id)}
+                    >
+                      <span>Eliminar Ticket</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
