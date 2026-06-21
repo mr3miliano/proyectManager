@@ -10,7 +10,9 @@ import {
   Phone, 
   Building,
   CheckCircle,
-  FileCheck2
+  FileCheck2,
+  Edit2,
+  Trash2
 } from "lucide-react";
 
 export const ClientManager: React.FC = () => {
@@ -28,6 +30,13 @@ export const ClientManager: React.FC = () => {
   const [cCompany, setCCompany] = useState("");
   const [cEmail, setCEmail] = useState("");
   const [cPhone, setCPhone] = useState("");
+
+  // Estados para Edición de Cliente
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editCompany, setEditCompany] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
 
   // Campos contrato
   const [conTitle, setConTitle] = useState("");
@@ -82,6 +91,64 @@ export const ClientManager: React.FC = () => {
       const updated = await dataService.getClients();
       setClients(updated);
       setSelectedClient(newClient);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const openEditModal = () => {
+    if (!selectedClient) return;
+    setEditName(selectedClient.name);
+    setEditCompany(selectedClient.company);
+    setEditEmail(selectedClient.email);
+    setEditPhone(selectedClient.phone || "");
+    setShowEditModal(true);
+  };
+
+  const handleEditClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedClient || !editCompany || !editName) return;
+
+    try {
+      const updates = {
+        name: editName,
+        company: editCompany,
+        email: editEmail,
+        phone: editPhone
+      };
+      await dataService.updateClient(selectedClient.id, updates);
+
+      const updatedClient = { ...selectedClient, ...updates };
+      setSelectedClient(updatedClient);
+      
+      // Actualizar listado global
+      const updatedList = await dataService.getClients();
+      setClients(updatedList);
+      
+      setShowEditModal(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteClient = async () => {
+    if (!selectedClient) return;
+    const confirmDelete = window.confirm(
+      `¿Estás seguro de que deseas eliminar al cliente "${selectedClient.company}"? Esta acción no se puede deshacer.`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await dataService.deleteClient(selectedClient.id);
+      
+      const updatedList = await dataService.getClients();
+      setClients(updatedList);
+      
+      if (updatedList.length > 0) {
+        setSelectedClient(updatedList[0]);
+      } else {
+        setSelectedClient(null);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -257,14 +324,26 @@ export const ClientManager: React.FC = () => {
                 flexWrap: "wrap",
                 gap: "1rem"
               }}>
-                <div>
-                  <h3 style={{ fontSize: "1.4rem", marginBottom: "0.25rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <Building size={22} style={{ color: "var(--color-primary)" }} />
-                    {selectedClient.company}
-                  </h3>
-                  <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
-                    Representante: <strong>{selectedClient.name}</strong>
-                  </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  <div>
+                    <h3 style={{ fontSize: "1.4rem", marginBottom: "0.25rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <Building size={22} style={{ color: "var(--color-primary)" }} />
+                      {selectedClient.company}
+                    </h3>
+                    <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
+                      Representante: <strong>{selectedClient.name}</strong>
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <button className="btn btn-outline" style={{ padding: "0.35rem 0.6rem", fontSize: "0.8rem" }} onClick={openEditModal}>
+                      <Edit2 size={14} />
+                      <span>Editar</span>
+                    </button>
+                    <button className="btn btn-outline" style={{ padding: "0.35rem 0.6rem", fontSize: "0.8rem", color: "var(--color-danger)", borderColor: "rgba(239, 68, 68, 0.2)" }} onClick={handleDeleteClient}>
+                      <Trash2 size={14} />
+                      <span>Eliminar</span>
+                    </button>
+                  </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "0.85rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-secondary)" }}>
@@ -578,6 +657,64 @@ export const ClientManager: React.FC = () => {
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", marginTop: "1rem" }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowMilestoneModal(false)}>Cancelar</button>
                 <button type="submit" className="btn btn-primary">Añadir Hito</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Cliente */}
+      {showEditModal && selectedClient && (
+        <div className="modal-backdrop">
+          <div className="modal-content">
+            <h3 style={{ marginBottom: "1.5rem" }}>Editar Cliente</h3>
+            <form onSubmit={handleEditClient} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, marginBottom: "0.5rem" }}>Empresa / Organización</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej. Acme Corp" 
+                  value={editCompany}
+                  onChange={(e) => setEditCompany(e.target.value)}
+                  required 
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, marginBottom: "0.5rem" }}>Nombre del Representante</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej. Carlos Martínez" 
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  required 
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, marginBottom: "0.5rem" }}>Correo de Contacto</label>
+                <input 
+                  type="email" 
+                  placeholder="contacto@empresa.com" 
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  required 
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, marginBottom: "0.5rem" }}>Teléfono</label>
+                <input 
+                  type="text" 
+                  placeholder="+34 600 000 000" 
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", marginTop: "1rem" }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary">Guardar Cambios</button>
               </div>
             </form>
           </div>

@@ -298,6 +298,16 @@ export const dataService = {
     }
   },
 
+  async deleteClient(id: string): Promise<void> {
+    if (isFirebaseConfigured && db) {
+      await deleteDoc(doc(db, "clients", id));
+    } else {
+      const clients = await this.getClients();
+      const filtered = clients.filter(c => c.id !== id);
+      localStorage.setItem(CLIENTS_KEY, JSON.stringify(filtered));
+    }
+  },
+
   // PROYECTOS
   async getProjects(): Promise<Project[]> {
     if (isFirebaseConfigured && db) {
