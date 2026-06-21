@@ -1,5 +1,5 @@
 import { 
-  collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where, Timestamp, getDoc 
+  collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where, Timestamp, getDoc, setDoc 
 } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../firebase";
 
@@ -310,9 +310,10 @@ export const dataService = {
 
   // PROYECTOS
   async getProjects(): Promise<Project[]> {
+    let projs: Project[] = [];
     if (isFirebaseConfigured && db) {
       const snap = await getDocs(collection(db, "projects"));
-      return snap.docs.map(doc => {
+      projs = snap.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -321,8 +322,38 @@ export const dataService = {
         } as Project;
       });
     } else {
-      return JSON.parse(localStorage.getItem(PROJECTS_KEY) || "[]");
+      projs = JSON.parse(localStorage.getItem(PROJECTS_KEY) || "[]");
     }
+
+    if (projs.length === 0) {
+      const defaultProj = {
+        name: "Desarrollo E-Commerce SaaS",
+        description: "Crear una plataforma SaaS multi-tienda para pymes, con pasarela de pagos integrada y panel de administración.",
+        clientId: "c1",
+        budget: 15000,
+        hourlyRate: 50,
+        status: "active" as const,
+        createdAt: "2026-05-10"
+      };
+
+      if (isFirebaseConfigured && db) {
+        try {
+          await setDoc(doc(db, "projects", "p1"), {
+            ...defaultProj,
+            createdAt: Timestamp.fromDate(new Date("2026-05-10"))
+          });
+          projs = [{ id: "p1", ...defaultProj }];
+        } catch (e) {
+          console.error("Error creating default project p1 in Firestore:", e);
+        }
+      } else {
+        const localProj = { id: "p1", ...defaultProj };
+        localStorage.setItem(PROJECTS_KEY, JSON.stringify([localProj]));
+        projs = [localProj];
+      }
+    }
+
+    return projs;
   },
 
   async addProject(project: Omit<Project, 'id' | 'createdAt'>): Promise<Project> {
